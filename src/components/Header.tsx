@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -58,7 +57,7 @@ const Header: React.FC<HeaderProps> = ({ user }) => {
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
               <span className="text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-brand to-blue-600">
-                EduWave
+                FCA Anaesthesia
               </span>
             </Link>
           </div>

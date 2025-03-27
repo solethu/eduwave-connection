@@ -21,7 +21,7 @@ const Login = () => {
       <div className="mb-8 text-center animate-fade-in">
         <CircleUser className="w-14 h-14 mx-auto mb-2 text-brand" />
         <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand to-blue-600">
-          EduWave
+          FCA Anaesthesia
         </h1>
         <p className="text-gray-500 mt-1">Your Learning Journey Starts Here</p>
       </div>
