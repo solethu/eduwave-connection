@@ -6,10 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import Header from '@/components/Header';
 import VideoPlayer from '@/components/VideoPlayer';
-import { Clock, BarChart, BookOpen, MessageSquare, ThumbsUp, Share2, Flag, Download, Bookmark } from 'lucide-react';
+import { Clock, BarChart, BookOpen, MessageSquare, ThumbsUp, Share2, Flag, Download, Bookmark, Play } from 'lucide-react';
 
 interface User {
   name: string;

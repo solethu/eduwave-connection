@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, EyeOff, ChevronRight } from 'lucide-react';
 
@@ -30,7 +30,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
     setTimeout(() => {
       // This is a mock implementation - in a real app, you would call an API
       if (type === 'login') {
-        // For demo purposes, we'll use different hardcoded routes based on the role
+        // For Demo purposes, we'll use different hardcoded routes based on the role
         if (email === 'admin@example.com' && password === 'password') {
           // Store user in localStorage (in a real app, you'd use a proper auth system)
           localStorage.setItem('user', JSON.stringify({
