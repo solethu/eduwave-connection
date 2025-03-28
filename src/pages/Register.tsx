@@ -3,17 +3,40 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AuthForm from '@/components/AuthForm';
 import { UserPlus } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { toast } from "sonner";
 
 const Register = () => {
   const navigate = useNavigate();
   
   // Check if user is already logged in
   useEffect(() => {
-    const user = localStorage.getItem('user');
-    if (user) {
-      const userData = JSON.parse(user);
-      navigate(userData.role === 'admin' ? '/admin' : '/dashboard');
-    }
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      
+      if (data.session) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', data.session.user.email)
+          .single();
+          
+        if (userData) {
+          // Save user data to localStorage
+          localStorage.setItem('user', JSON.stringify({
+            name: userData.name,
+            email: userData.email, 
+            role: userData.role,
+            avatar: userData.avatar
+          }));
+          
+          // Redirect based on role
+          navigate(userData.role === 'admin' ? '/admin' : '/dashboard');
+        }
+      }
+    };
+    
+    checkAuth();
   }, [navigate]);
 
   return (
