@@ -84,43 +84,90 @@ const ResourcesPage = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button>
-              <Plus className="mr-1 h-4 w-4" /> New Folder
-            </Button>
+            {user?.role === 'admin' && (
+              <Button>
+                <Plus className="mr-1 h-4 w-4" /> New Folder
+              </Button>
+            )}
           </div>
         </div>
         
-        {/* Folders grid with cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 animate-slide-up">
-          {getFilteredFolders().map((folder) => (
-            <Card 
-              key={folder.id} 
-              className="cursor-pointer hover:shadow-glass-hover transition-shadow"
-              onClick={() => handleFolderClick(folder.id)}
-            >
-              <CardContent className="p-6 flex flex-col items-center">
-                <Folder className="h-12 w-12 text-brand mb-4" />
-                <h3 className="text-lg font-medium text-center">{folder.name}</h3>
-                <p className="text-sm text-gray-500 mt-1">{folder.owner}</p>
-                <p className="text-xs text-gray-400 mt-1">
-                  {new Date(folder.date).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                  })}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-          
-          {getFilteredFolders().length === 0 && (
-            <div className="col-span-full p-12 bg-white rounded-md shadow text-center">
-              <Folder className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-700">No folders found</h3>
-              <p className="text-gray-500 mt-1">Try adjusting your search criteria</p>
-            </div>
-          )}
-        </div>
+        {/* Different views based on user role */}
+        {user?.role === 'admin' ? (
+          // Admin view - Card layout
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 animate-slide-up">
+            {getFilteredFolders().map((folder) => (
+              <Card 
+                key={folder.id} 
+                className="cursor-pointer hover:shadow-glass-hover transition-shadow"
+                onClick={() => handleFolderClick(folder.id)}
+              >
+                <CardContent className="p-6 flex flex-col items-center">
+                  <Folder className="h-12 w-12 text-brand mb-4" />
+                  <h3 className="text-lg font-medium text-center">{folder.name}</h3>
+                  <p className="text-sm text-gray-500 mt-1">{folder.owner}</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {new Date(folder.date).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric'
+                    })}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+            
+            {getFilteredFolders().length === 0 && (
+              <div className="col-span-full p-12 bg-white rounded-md shadow text-center">
+                <Folder className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-700">No folders found</h3>
+                <p className="text-gray-500 mt-1">Try adjusting your search criteria</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          // Student view - Resource listing with downloads and descriptions
+          <div className="space-y-6 animate-slide-up">
+            {getFilteredFolders().map((folder) => (
+              <Card 
+                key={folder.id} 
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => handleFolderClick(folder.id)}
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-center">
+                    <div className="mr-4">
+                      <Folder className="h-10 w-10 text-brand" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-medium">{folder.name}</h3>
+                      <div className="flex items-center justify-between mt-1">
+                        <p className="text-sm text-gray-500">
+                          Shared by: {folder.owner}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {new Date(folder.date).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            
+            {getFilteredFolders().length === 0 && (
+              <div className="p-12 bg-white rounded-md shadow text-center">
+                <Folder className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-700">No resources found</h3>
+                <p className="text-gray-500 mt-1">Try adjusting your search criteria</p>
+              </div>
+            )}
+          </div>
+        )}
       </main>
     </div>
   );
