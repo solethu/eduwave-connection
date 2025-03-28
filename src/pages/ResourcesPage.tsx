@@ -3,16 +3,10 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import Header from '@/components/Header';
-import { 
-  Search, 
-  Folder,
-  ChevronDown,
-  Download,
-  UserCircle
-} from 'lucide-react';
+import { Search, Folder, Plus } from 'lucide-react';
+import { Card, CardContent } from "@/components/ui/card";
 
 interface User {
   name: string;
@@ -21,7 +15,7 @@ interface User {
   avatar?: string;
 }
 
-// New data structure for folders
+// Folder data structure
 const foldersData = [
   { id: 1, name: 'ANKI Decks', owner: 'djwwium', ownerAvatar: null, date: '2024-02-25' },
   { id: 2, name: 'Pharmacology', owner: 'me', ownerAvatar: null, date: '2024-02-22' },
@@ -68,29 +62,6 @@ const ResourcesPage = () => {
     // Future implementation: navigate to folder contents
   };
 
-  // Get avatar letter for owner
-  const getOwnerAvatar = (owner: string) => {
-    if (owner === 'me') {
-      return (
-        <div className="bg-green-700 h-8 w-8 rounded-full flex items-center justify-center text-white font-medium">
-          L
-        </div>
-      );
-    } else if (owner === 'tiyasisanda') {
-      return (
-        <div className="bg-orange-600 h-8 w-8 rounded-full flex items-center justify-center text-white font-medium">
-          S
-        </div>
-      );
-    } else {
-      return (
-        <div className="bg-gray-500 h-8 w-8 rounded-full flex items-center justify-center text-white font-medium">
-          {owner.charAt(0).toUpperCase()}
-        </div>
-      );
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header user={user} />
@@ -114,64 +85,41 @@ const ResourcesPage = () => {
               />
             </div>
             <Button>
-              New Folder
+              <Plus className="mr-1 h-4 w-4" /> New Folder
             </Button>
           </div>
         </div>
         
-        {/* Resources table */}
-        <div className="bg-white rounded-md shadow overflow-hidden animate-slide-up">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[60%]">Name</TableHead>
-                <TableHead>Owner</TableHead>
-                <TableHead>Last modified</TableHead>
-                <TableHead className="text-right"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {getFilteredFolders().map((folder) => (
-                <TableRow 
-                  key={folder.id}
-                  className="hover:bg-gray-50 cursor-pointer"
-                  onClick={() => handleFolderClick(folder.id)}
-                >
-                  <TableCell className="font-medium flex items-center gap-3">
-                    <Folder className="h-5 w-5 text-gray-500" />
-                    {folder.name}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {getOwnerAvatar(folder.owner)}
-                      <span>{folder.owner}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {new Date(folder.date).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric'
-                    })}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <ChevronDown className="h-5 w-5 inline-block text-gray-400" />
-                  </TableCell>
-                </TableRow>
-              ))}
-
-              {getFilteredFolders().length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={4} className="h-32 text-center">
-                    <div className="flex flex-col items-center justify-center">
-                      <Folder className="h-10 w-10 text-gray-300 mb-2" />
-                      <p className="text-gray-500 font-medium">No folders found</p>
-                      <p className="text-gray-400 text-sm">Try adjusting your search criteria</p>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+        {/* Folders grid with cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 animate-slide-up">
+          {getFilteredFolders().map((folder) => (
+            <Card 
+              key={folder.id} 
+              className="cursor-pointer hover:shadow-glass-hover transition-shadow"
+              onClick={() => handleFolderClick(folder.id)}
+            >
+              <CardContent className="p-6 flex flex-col items-center">
+                <Folder className="h-12 w-12 text-brand mb-4" />
+                <h3 className="text-lg font-medium text-center">{folder.name}</h3>
+                <p className="text-sm text-gray-500 mt-1">{folder.owner}</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {new Date(folder.date).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                  })}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+          
+          {getFilteredFolders().length === 0 && (
+            <div className="col-span-full p-12 bg-white rounded-md shadow text-center">
+              <Folder className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-700">No folders found</h3>
+              <p className="text-gray-500 mt-1">Try adjusting your search criteria</p>
+            </div>
+          )}
         </div>
       </main>
     </div>
