@@ -28,3 +28,15 @@ export interface User {
   role: 'student' | 'admin';
   avatar?: string;
 }
+
+export type UserRole = 'student' | 'admin';
+
+export interface Profile {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  avatar_url?: string;
+  created_at: string;
+  updated_at: string;
+}

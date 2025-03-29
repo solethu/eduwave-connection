@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -11,6 +11,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { LogOut, Menu, X, BarChart2, Book, Video, Home } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface User {
   name: string;
@@ -30,10 +32,16 @@ const Header: React.FC<HeaderProps> = ({ user }) => {
   
   const isActive = (path: string) => location.pathname === path;
   
-  const handleLogout = () => {
-    // In a real app, this would handle the logout process
-    localStorage.removeItem('user');
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      localStorage.removeItem('user');
+      toast.success('Logged out successfully');
+      navigate('/login');
+    } catch (error) {
+      console.error('Error logging out:', error);
+      toast.error('Error logging out');
+    }
   };
 
   const navItems = user ? (

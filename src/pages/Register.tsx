@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AuthForm from '@/components/AuthForm';
 import { UserPlus } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from "sonner";
 
 const Register = () => {
@@ -16,9 +16,9 @@ const Register = () => {
       
       if (data.session) {
         const { data: userData } = await supabase
-          .from('users')
+          .from('profiles')
           .select('*')
-          .eq('email', data.session.user.email)
+          .eq('id', data.session.user.id)
           .single();
           
         if (userData) {
@@ -27,7 +27,7 @@ const Register = () => {
             name: userData.name,
             email: userData.email, 
             role: userData.role,
-            avatar: userData.avatar
+            avatar: userData.avatar_url
           }));
           
           // Redirect based on role

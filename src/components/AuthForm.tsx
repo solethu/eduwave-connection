@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, EyeOff, ChevronRight } from 'lucide-react';
+import { supabase } from "@/integrations/supabase/client";
 
 interface AuthFormProps {
   type: 'login' | 'register';
@@ -22,55 +23,75 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
   
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      // This is a mock implementation - in a real app, you would call an API
+    try {
       if (type === 'login') {
-        // For Demo purposes, we'll use different hardcoded routes based on the role
-        if (email === 'admin@example.com' && password === 'password') {
-          // Store user in localStorage (in a real app, you'd use a proper auth system)
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) {
+          toast.error(error.message);
+          setLoading(false);
+          return;
+        }
+
+        if (data.session) {
+          const { data: userData, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', data.session.user.id)
+            .single();
+
+          if (profileError) {
+            toast.error('Error fetching profile');
+            setLoading(false);
+            return;
+          }
+
+          // Store user in localStorage
           localStorage.setItem('user', JSON.stringify({
-            name: 'Admin User',
-            email: 'admin@example.com',
-            role: 'admin'
+            name: userData.name,
+            email: userData.email,
+            role: userData.role,
+            avatar: userData.avatar_url
           }));
-          toast.success('Logged in as admin');
-          navigate('/admin');
-        } else if (email === 'student@example.com' && password === 'password') {
-          localStorage.setItem('user', JSON.stringify({
-            name: 'Student User',
-            email: 'student@example.com',
-            role: 'student'
-          }));
+
           toast.success('Logged in successfully');
-          navigate('/dashboard');
-        } else {
-          // For demo, any other combo works as student
-          localStorage.setItem('user', JSON.stringify({
-            name: name || 'Demo User',
-            email: email,
-            role: 'student'
-          }));
-          toast.success('Demo login successful');
-          navigate('/dashboard');
+          navigate(userData.role === 'admin' ? '/admin' : '/dashboard');
         }
       } else {
-        // Registration - for demo purposes always succeeds
-        localStorage.setItem('user', JSON.stringify({
-          name: name,
-          email: email,
-          role: role
-        }));
-        toast.success('Account created successfully');
-        navigate(role === 'admin' ? '/admin' : '/dashboard');
+        // Registration
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              name,
+              role
+            }
+          }
+        });
+
+        if (error) {
+          toast.error(error.message);
+          setLoading(false);
+          return;
+        }
+
+        toast.success('Account created successfully! Check your email for verification.');
+        navigate('/login');
       }
-      
+    } catch (error) {
+      toast.error('An unexpected error occurred');
+      console.error(error);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (

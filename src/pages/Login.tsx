@@ -3,17 +3,35 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AuthForm from '@/components/AuthForm';
 import { CircleUser } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const Login = () => {
   const navigate = useNavigate();
   
   // Check if user is already logged in
   useEffect(() => {
-    const user = localStorage.getItem('user');
-    if (user) {
-      const userData = JSON.parse(user);
-      navigate(userData.role === 'admin' ? '/admin' : '/dashboard');
-    }
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        const { data: userData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', data.session.user.id)
+          .single();
+          
+        if (userData) {
+          localStorage.setItem('user', JSON.stringify({
+            name: userData.name,
+            email: userData.email,
+            role: userData.role,
+            avatar: userData.avatar_url
+          }));
+          navigate(userData.role === 'admin' ? '/admin' : '/dashboard');
+        }
+      }
+    };
+    
+    checkSession();
   }, [navigate]);
 
   return (
