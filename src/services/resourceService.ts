@@ -8,14 +8,14 @@ import { toast } from 'sonner';
 // Get all folders
 export async function getFolders() {
   try {
-    const { data: folders, error } = await supabase
+    const { data, error } = await supabase
       .from('folders')
       .select('*')
       .order('created_at', { ascending: false });
     
     if (error) throw error;
     
-    return folders as FolderData[];
+    return data as FolderData[];
   } catch (error) {
     console.error('Error fetching folders:', error);
     return [];
@@ -51,7 +51,7 @@ export async function createFolder(name: string, description: string, user: { na
 // Get files in a folder
 export async function getFilesInFolder(folderId: string) {
   try {
-    const { data: files, error } = await supabase
+    const { data, error } = await supabase
       .from('files')
       .select('*')
       .eq('folder_id', folderId)
@@ -59,7 +59,7 @@ export async function getFilesInFolder(folderId: string) {
     
     if (error) throw error;
     
-    return files as FileData[];
+    return data as FileData[];
   } catch (error) {
     console.error('Error fetching files:', error);
     return [];
