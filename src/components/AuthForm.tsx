@@ -66,6 +66,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
         }
       } else {
         // Registration
+        console.log("Registering with role:", role);
+        
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -78,17 +80,19 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
         });
 
         if (error) {
+          console.error("Registration error:", error);
           toast.error(error.message);
           setLoading(false);
           return;
         }
 
+        console.log("Registration successful:", data);
         toast.success('Account created successfully! Check your email for verification.');
         navigate('/login');
       }
     } catch (error) {
+      console.error("Authentication error:", error);
       toast.error('An unexpected error occurred');
-      console.error(error);
     } finally {
       setLoading(false);
     }
