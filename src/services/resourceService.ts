@@ -1,5 +1,6 @@
 
-import { supabase, formatFileSize } from '@/lib/supabase';
+import { supabase } from "@/integrations/supabase/client";
+import { formatFileSize } from "@/lib/utils"; // Using utils from the existing utils file
 import { FileData, FolderData } from '@/types/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'sonner';
