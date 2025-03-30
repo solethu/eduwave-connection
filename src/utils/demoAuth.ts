@@ -3,8 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 /**
- * Handles login attempts with demo credentials by setting up demo users if they don't exist
- * and then signing in with them
+ * This function is only used for reference now,
+ * as we're not trying to create demo users dynamically
  */
 export const handleDemoLogin = async (email: string, password: string) => {
   // Check if this is a demo login attempt
@@ -19,7 +19,7 @@ export const handleDemoLogin = async (email: string, password: string) => {
   try {
     console.log(`Attempting demo login with ${email}`);
     
-    // First try to sign in directly
+    // Try to sign in directly
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -31,61 +31,10 @@ export const handleDemoLogin = async (email: string, password: string) => {
       return data;
     }
 
-    // If login failed, attempt to create the demo user
+    // If login failed, log the error
     if (error) {
-      console.log(`Demo login failed, attempting to create user: ${email}`);
-      
-      const role = isDemoAdmin ? "admin" : "student";
-      const name = isDemoAdmin ? "Admin User" : "Student User";
-      
-      // Create the user
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name,
-            role
-          }
-        }
-      });
-
-      if (signUpError) {
-        console.error("Error creating demo user:", signUpError);
-        return { error: signUpError };
-      }
-
-      // Try to sign in now that the user is created
-      const { data: newLoginData, error: newLoginError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (newLoginError) {
-        console.error("Error signing in with newly created demo user:", newLoginError);
-        return { error: newLoginError };
-      }
-
-      // Create profile data manually if needed
-      if (newLoginData?.session) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert({
-            id: newLoginData.session.user.id,
-            name,
-            email,
-            role,
-            avatar_url: null,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          });
-
-        if (profileError) {
-          console.error("Error creating profile:", profileError);
-        }
-      }
-
-      return newLoginData;
+      console.error(`Demo login failed for ${email}:`, error);
+      return { error };
     }
     
     return null;

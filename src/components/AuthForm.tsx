@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, EyeOff, ChevronRight } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
-import { handleDemoLogin } from '@/utils/demoAuth';
 
 interface AuthFormProps {
   type: 'login' | 'register';
@@ -30,47 +29,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
 
     try {
       if (type === 'login') {
-        // First check if this is a demo login
-        const demoResult = await handleDemoLogin(email, password);
-        
-        if (demoResult) {
-          // Check if there's an error in the demo result
-          if ('error' in demoResult && demoResult.error) {
-            console.error('Demo login error:', demoResult.error);
-            toast.error(demoResult.error.message || 'Login failed');
-            setLoading(false);
-            return;
-          }
-          
-          // Check if there's a session in the demo result
-          if ('session' in demoResult && demoResult.session) {
-            const { data: userData, error: profileError } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', demoResult.session.user.id)
-              .single();
-
-            if (profileError) {
-              toast.error('Error fetching profile');
-              setLoading(false);
-              return;
-            }
-
-            // Store user in localStorage
-            localStorage.setItem('user', JSON.stringify({
-              name: userData.name,
-              email: userData.email,
-              role: userData.role,
-              avatar: userData.avatar_url
-            }));
-
-            toast.success('Logged in successfully');
-            navigate(userData.role === 'admin' ? '/admin' : '/dashboard');
-            return;
-          }
-        }
-
-        // Regular login flow if not a demo user or demo setup failed
+        // Regular login flow
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -78,7 +37,14 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
 
         if (error) {
           console.error('Login error:', error);
-          toast.error(error.message);
+          
+          // Special message for demo login attempts
+          if ((email === 'admin@example.com' || email === 'student@example.com') && password === 'password') {
+            toast.error('Unable to log in with demo credentials. The database may not be configured correctly.');
+          } else {
+            toast.error(error.message || 'Login failed');
+          }
+          
           setLoading(false);
           return;
         }
@@ -121,7 +87,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
         });
 
         if (error) {
-          toast.error(error.message);
+          toast.error(error.message || 'Registration failed');
           setLoading(false);
           return;
         }
