@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -29,18 +28,32 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
 
     try {
       if (type === 'login') {
+        console.log(`Attempting to login with email: ${email}`);
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
 
         if (error) {
-          toast.error(error.message);
+          console.error("Login error:", error);
+          
+          // Show a more helpful message for common errors
+          if (error.message.includes('Invalid login credentials')) {
+            toast.error('Invalid email or password. Please try again.');
+          } else if (error.message.includes('Email not confirmed')) {
+            toast.error('Please confirm your email address before logging in.');
+          } else {
+            toast.error(error.message);
+          }
+          
           setLoading(false);
           return;
         }
 
+        console.log("Login successful:", data);
+        
         if (data.session) {
+          // Fetch user profile data
           const { data: userData, error: profileError } = await supabase
             .from('profiles')
             .select('*')
@@ -48,11 +61,14 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
             .single();
 
           if (profileError) {
+            console.error("Profile fetch error:", profileError);
             toast.error('Error fetching profile');
             setLoading(false);
             return;
           }
 
+          console.log("User profile fetched:", userData);
+          
           // Store user in localStorage
           localStorage.setItem('user', JSON.stringify({
             name: userData.name,
@@ -62,6 +78,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
           }));
 
           toast.success('Logged in successfully');
+          
+          // Navigate based on role
           navigate(userData.role === 'admin' ? '/admin' : '/dashboard');
         }
       } else {
@@ -98,6 +116,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
     }
   };
 
+  // Rest of the component remains the same
   return (
     <Card className="w-full max-w-md mx-auto animate-scale-in">
       <CardHeader>
