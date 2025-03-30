@@ -17,6 +17,8 @@ export const handleDemoLogin = async (email: string, password: string) => {
   }
   
   try {
+    console.log(`Attempting demo login with ${email}`);
+    
     // First try to sign in directly
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -24,13 +26,14 @@ export const handleDemoLogin = async (email: string, password: string) => {
     });
 
     // If successful, return the session data
-    if (data.session) {
+    if (data?.session) {
+      console.log(`Demo login successful for ${email}`);
       return data;
     }
 
     // If login failed, attempt to create the demo user
     if (error) {
-      console.log("Demo login failed, attempting to create user:", email);
+      console.log(`Demo login failed, attempting to create user: ${email}`);
       
       const role = isDemoAdmin ? "admin" : "student";
       const name = isDemoAdmin ? "Admin User" : "Student User";
@@ -72,7 +75,9 @@ export const handleDemoLogin = async (email: string, password: string) => {
             name,
             email,
             role,
-            avatar_url: null
+            avatar_url: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
           });
 
         if (profileError) {
@@ -82,6 +87,8 @@ export const handleDemoLogin = async (email: string, password: string) => {
 
       return newLoginData;
     }
+    
+    return null;
   } catch (error) {
     console.error("Demo auth error:", error);
     return { error };

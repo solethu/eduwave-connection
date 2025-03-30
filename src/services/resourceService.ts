@@ -1,8 +1,19 @@
 
-import { supabase, formatFileSize } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { FileData, FolderData } from '@/types/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'sonner';
+
+// Helper function to format file size
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 Bytes';
+  
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
 
 // Get all folders
 export async function getFolders() {

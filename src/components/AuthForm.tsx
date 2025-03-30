@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -33,13 +34,16 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
         const demoResult = await handleDemoLogin(email, password);
         
         if (demoResult) {
-          if (demoResult.error) {
+          // Check if there's an error in the demo result
+          if ('error' in demoResult && demoResult.error) {
+            console.error('Demo login error:', demoResult.error);
             toast.error(demoResult.error.message || 'Login failed');
             setLoading(false);
             return;
           }
           
-          if (demoResult.session) {
+          // Check if there's a session in the demo result
+          if ('session' in demoResult && demoResult.session) {
             const { data: userData, error: profileError } = await supabase
               .from('profiles')
               .select('*')

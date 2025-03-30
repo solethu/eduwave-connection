@@ -39,9 +39,15 @@ const Login = () => {
   // Setup demo accounts when the login page loads
   useEffect(() => {
     const setupDemoAccounts = async () => {
-      // Try creating demo accounts silently on page load
-      await handleDemoLogin("admin@example.com", "password");
-      await handleDemoLogin("student@example.com", "password");
+      try {
+        console.log("Setting up demo accounts");
+        // Try creating demo accounts silently on page load
+        await handleDemoLogin("admin@example.com", "password");
+        await handleDemoLogin("student@example.com", "password");
+        console.log("Demo accounts setup complete");
+      } catch (error) {
+        console.error("Failed to set up demo accounts:", error);
+      }
     };
     
     setupDemoAccounts();
