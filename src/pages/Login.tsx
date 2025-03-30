@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import AuthForm from '@/components/AuthForm';
 import { CircleUser } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { handleDemoLogin } from '@/utils/demoAuth';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -33,6 +35,17 @@ const Login = () => {
     
     checkSession();
   }, [navigate]);
+
+  // Setup demo accounts when the login page loads
+  useEffect(() => {
+    const setupDemoAccounts = async () => {
+      // Try creating demo accounts silently on page load
+      await handleDemoLogin("admin@example.com", "password");
+      await handleDemoLogin("student@example.com", "password");
+    };
+    
+    setupDemoAccounts();
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gray-50 p-4">

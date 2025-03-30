@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import { toast } from "sonner";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, EyeOff, ChevronRight } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
+import { handleDemoLogin } from '@/utils/demoAuth';
 
 interface AuthFormProps {
   type: 'login' | 'register';
@@ -29,12 +29,51 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
 
     try {
       if (type === 'login') {
+        // First check if this is a demo login
+        const demoResult = await handleDemoLogin(email, password);
+        
+        if (demoResult) {
+          if (demoResult.error) {
+            toast.error(demoResult.error.message || 'Login failed');
+            setLoading(false);
+            return;
+          }
+          
+          if (demoResult.session) {
+            const { data: userData, error: profileError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', demoResult.session.user.id)
+              .single();
+
+            if (profileError) {
+              toast.error('Error fetching profile');
+              setLoading(false);
+              return;
+            }
+
+            // Store user in localStorage
+            localStorage.setItem('user', JSON.stringify({
+              name: userData.name,
+              email: userData.email,
+              role: userData.role,
+              avatar: userData.avatar_url
+            }));
+
+            toast.success('Logged in successfully');
+            navigate(userData.role === 'admin' ? '/admin' : '/dashboard');
+            return;
+          }
+        }
+
+        // Regular login flow if not a demo user or demo setup failed
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
 
         if (error) {
+          console.error('Login error:', error);
           toast.error(error.message);
           setLoading(false);
           return;
@@ -87,8 +126,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
         navigate('/login');
       }
     } catch (error) {
+      console.error('Unexpected auth error:', error);
       toast.error('An unexpected error occurred');
-      console.error(error);
     } finally {
       setLoading(false);
     }
