@@ -4,8 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import AuthForm from '@/components/AuthForm';
 import { CircleUser } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { setupDemoUsers } from '@/utils/setupDemoUsers';
-import { toast } from 'sonner';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -30,9 +28,6 @@ const Login = () => {
           }));
           navigate(userData.role === 'admin' ? '/admin' : '/dashboard');
         }
-      } else {
-        // If not logged in, ensure demo users exist
-        await setupDemoUsers();
       }
     };
     
@@ -59,9 +54,6 @@ const Login = () => {
           <p>Admin: admin@example.com / password</p>
           <p>Student: student@example.com / password</p>
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">
-          Note: If this is your first time, please wait a moment for demo accounts to be created.
-        </p>
       </div>
     </div>
   );

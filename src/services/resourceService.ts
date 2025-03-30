@@ -1,6 +1,5 @@
 
-import { supabase } from "@/integrations/supabase/client";
-import { formatFileSize } from "@/lib/utils";
+import { supabase, formatFileSize } from '@/lib/supabase';
 import { FileData, FolderData } from '@/types/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'sonner';
@@ -8,14 +7,14 @@ import { toast } from 'sonner';
 // Get all folders
 export async function getFolders() {
   try {
-    const { data, error } = await supabase
+    const { data: folders, error } = await supabase
       .from('folders')
       .select('*')
       .order('created_at', { ascending: false });
     
     if (error) throw error;
     
-    return data as FolderData[];
+    return folders as FolderData[];
   } catch (error) {
     console.error('Error fetching folders:', error);
     return [];
@@ -51,7 +50,7 @@ export async function createFolder(name: string, description: string, user: { na
 // Get files in a folder
 export async function getFilesInFolder(folderId: string) {
   try {
-    const { data, error } = await supabase
+    const { data: files, error } = await supabase
       .from('files')
       .select('*')
       .eq('folder_id', folderId)
@@ -59,7 +58,7 @@ export async function getFilesInFolder(folderId: string) {
     
     if (error) throw error;
     
-    return data as FileData[];
+    return files as FileData[];
   } catch (error) {
     console.error('Error fetching files:', error);
     return [];
