@@ -49,7 +49,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
           return;
         }
 
-        if (data.session) {
+        if (data?.session) {
           const { data: userData, error: profileError } = await supabase
             .from('profiles')
             .select('*')
