@@ -12,7 +12,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { LogOut, Menu, X, BarChart2, Book, Video, Home } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface User {
@@ -35,7 +34,7 @@ const Header: React.FC<HeaderProps> = ({ user }) => {
   
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      // Clear user data from localStorage
       localStorage.removeItem('user');
       toast.success('Logged out successfully');
       navigate('/login');

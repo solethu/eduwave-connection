@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CircleUser } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { handleDemoLogin } from '@/utils/demoAuth';
@@ -13,28 +12,11 @@ const Login = () => {
   
   // Check if user is already logged in
   useEffect(() => {
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        const { data: userData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', data.session.user.id)
-          .single();
-          
-        if (userData) {
-          localStorage.setItem('user', JSON.stringify({
-            name: userData.name,
-            email: userData.email,
-            role: userData.role,
-            avatar: userData.avatar_url
-          }));
-          navigate(userData.role === 'admin' ? '/admin' : '/dashboard');
-        }
-      }
-    };
-    
-    checkSession();
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      const user = JSON.parse(userData);
+      navigate(user.role === 'admin' ? '/admin' : '/dashboard');
+    }
   }, [navigate]);
 
   const attemptDemoLogin = async (role: 'admin' | 'student') => {
@@ -46,30 +28,14 @@ const Login = () => {
       const response = await handleDemoLogin(email, password);
       
       if (response?.error) {
-        toast.error(`Unable to log in with demo ${role} credentials. The database may not be configured with these users.`);
+        toast.error(`Unable to log in with demo ${role} credentials: ${response.error.message}`);
         setAttemptingDemoLogin(false);
         return;
       }
       
-      if (response?.data?.session) {
-        const { data: userData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', response.data.session.user.id)
-          .single();
-        
-        if (profileError) {
-          toast.error(`Error fetching ${role} profile`);
-          setAttemptingDemoLogin(false);
-          return;
-        }
-        
-        localStorage.setItem('user', JSON.stringify({
-          name: userData.name,
-          email: userData.email,
-          role: userData.role,
-          avatar: userData.avatar_url
-        }));
+      if (response?.data?.user) {
+        // Store the user data in localStorage for session persistence
+        localStorage.setItem('user', JSON.stringify(response.data.user));
         
         toast.success(`Logged in successfully as ${role}`);
         navigate(role === 'admin' ? '/admin' : '/dashboard');
