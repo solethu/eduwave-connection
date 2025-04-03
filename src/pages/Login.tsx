@@ -1,11 +1,11 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import AuthForm from '@/components/AuthForm';
 import { CircleUser } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { handleDemoLogin } from '@/utils/demoAuth';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -37,33 +37,28 @@ const Login = () => {
     checkSession();
   }, [navigate]);
 
-  const handleDemoLogin = async (role: 'admin' | 'student') => {
+  const attemptDemoLogin = async (role: 'admin' | 'student') => {
     setAttemptingDemoLogin(true);
     try {
       const email = role === 'admin' ? 'admin@example.com' : 'student@example.com';
       const password = 'password';
       
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const response = await handleDemoLogin(email, password);
       
-      if (error) {
-        console.error(`Demo login error for ${role}:`, error);
+      if (response?.error) {
         toast.error(`Unable to log in with demo ${role} credentials. The database may not be configured with these users.`);
         setAttemptingDemoLogin(false);
         return;
       }
       
-      if (data?.session) {
+      if (response?.data?.session) {
         const { data: userData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', data.session.user.id)
+          .eq('id', response.data.session.user.id)
           .single();
         
         if (profileError) {
-          console.error(`Error fetching ${role} profile:`, profileError);
           toast.error(`Error fetching ${role} profile`);
           setAttemptingDemoLogin(false);
           return;
@@ -80,7 +75,6 @@ const Login = () => {
         navigate(role === 'admin' ? '/admin' : '/dashboard');
       }
     } catch (error) {
-      console.error('Unexpected auth error:', error);
       toast.error('An unexpected error occurred');
       setAttemptingDemoLogin(false);
     }
@@ -96,22 +90,19 @@ const Login = () => {
         <p className="text-gray-500 mt-1">Your Learning Journey Starts Here</p>
       </div>
       
-      <div className="w-full max-w-md">
-        <AuthForm type="login" />
-      </div>
-      
-      <div className="mt-8 space-y-4 text-center animate-fade-in">
-        <div>
-          <p className="text-sm font-medium text-gray-700">Quick access with demo accounts:</p>
-          <div className="mt-3 flex flex-col sm:flex-row gap-3 justify-center">
+      <div className="w-full max-w-md bg-white rounded-lg border border-gray-200 shadow-md p-6">
+        <h2 className="text-xl font-semibold text-center mb-6">Demo Access</h2>
+        
+        <div className="mt-6 space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button
-              variant="outline"
-              onClick={() => handleDemoLogin('admin')}
+              variant="default"
+              onClick={() => attemptDemoLogin('admin')}
               disabled={attemptingDemoLogin}
               className="flex items-center justify-center gap-2"
             >
               {attemptingDemoLogin ? (
-                <div className="animate-spin h-4 w-4 border-2 border-gray-500 border-t-transparent rounded-full" />
+                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
               ) : (
                 <>
                   <CircleUser size={16} />
@@ -122,7 +113,7 @@ const Login = () => {
             
             <Button
               variant="outline"
-              onClick={() => handleDemoLogin('student')}
+              onClick={() => attemptDemoLogin('student')}
               disabled={attemptingDemoLogin}
               className="flex items-center justify-center gap-2"
             >
@@ -138,7 +129,7 @@ const Login = () => {
           </div>
         </div>
         
-        <div className="text-sm text-gray-500">
+        <div className="mt-8 text-sm text-gray-500 text-center">
           <p>Demo credentials:</p>
           <div className="mt-1">
             <p>Admin: admin@example.com / password</p>

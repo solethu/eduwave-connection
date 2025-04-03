@@ -8,7 +8,6 @@ import { lazy, Suspense } from "react";
 
 // Page imports with lazy loading for better performance
 const Login = lazy(() => import("./pages/Login"));
-const Register = lazy(() => import("./pages/Register"));
 const StudentDashboard = lazy(() => import("./pages/StudentDashboard"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const VideoPage = lazy(() => import("./pages/VideoPage"));
@@ -34,7 +33,6 @@ const App = () => (
           <Routes>
             {/* Authentication Routes */}
             <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
             
             {/* Student Routes */}
             <Route path="/dashboard" element={<StudentDashboard />} />

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -39,7 +40,6 @@ const Header: React.FC<HeaderProps> = ({ user }) => {
       toast.success('Logged out successfully');
       navigate('/login');
     } catch (error) {
-      console.error('Error logging out:', error);
       toast.error('Error logging out');
     }
   };
@@ -119,14 +119,9 @@ const Header: React.FC<HeaderProps> = ({ user }) => {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <>
-                <Button variant="ghost" asChild>
-                  <Link to="/login">Log in</Link>
-                </Button>
-                <Button asChild>
-                  <Link to="/register">Sign up</Link>
-                </Button>
-              </>
+              <Button variant="ghost" asChild>
+                <Link to="/login">Log in</Link>
+              </Button>
             )}
             
             {/* Mobile menu button */}
