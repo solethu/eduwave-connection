@@ -10,4 +10,4 @@ port = 54322
 
 [functions]
 [functions.send-access-email]
-verify_jwt = true
+verify_jwt = false
