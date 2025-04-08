@@ -12,6 +12,7 @@ const StudentDashboard = lazy(() => import("./pages/StudentDashboard"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const VideoPage = lazy(() => import("./pages/VideoPage"));
 const ResourcesPage = lazy(() => import("./pages/ResourcesPage"));
+const ManageStudents = lazy(() => import("./pages/ManageStudents"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Create a loading component for Suspense fallback
@@ -84,6 +85,11 @@ const App = () => {
               <Route path="/admin" element={
                 <ProtectedRoute requiredRole="admin">
                   <AdminDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/students" element={
+                <ProtectedRoute requiredRole="admin">
+                  <ManageStudents />
                 </ProtectedRoute>
               } />
               <Route path="/admin/videos" element={
