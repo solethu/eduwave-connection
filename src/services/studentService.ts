@@ -34,10 +34,11 @@ export const sendAccessEmail = async (studentId: string): Promise<boolean> => {
 };
 
 export const fetchStudents = async (): Promise<Student[]> => {
+  // Use type casting to work around TypeScript limitations with the Supabase client
   const { data, error } = await supabase
     .from('students')
     .select('*')
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false }) as any;
   
   if (error) {
     toast.error('Failed to load students');
@@ -49,11 +50,11 @@ export const fetchStudents = async (): Promise<Student[]> => {
 };
 
 export const addStudent = async (name: string, email: string): Promise<Student | null> => {
+  // Use type casting to work around TypeScript limitations with the Supabase client
   const { data, error } = await supabase
     .from('students')
     .insert([{ name, email }])
-    .select()
-    .single();
+    .select() as any;
   
   if (error) {
     toast.error(`Failed to add student: ${error.message}`);
@@ -61,16 +62,16 @@ export const addStudent = async (name: string, email: string): Promise<Student |
     return null;
   }
   
-  return data as Student;
+  return data[0] as Student;
 };
 
 export const updateStudent = async (id: string, name: string, email: string): Promise<Student | null> => {
+  // Use type casting to work around TypeScript limitations with the Supabase client
   const { data, error } = await supabase
     .from('students')
     .update({ name, email })
     .eq('id', id)
-    .select()
-    .single();
+    .select() as any;
   
   if (error) {
     toast.error(`Failed to update student: ${error.message}`);
@@ -78,14 +79,15 @@ export const updateStudent = async (id: string, name: string, email: string): Pr
     return null;
   }
   
-  return data as Student;
+  return data[0] as Student;
 };
 
 export const deleteStudent = async (id: string): Promise<boolean> => {
+  // Use type casting to work around TypeScript limitations with the Supabase client
   const { error } = await supabase
     .from('students')
     .delete()
-    .eq('id', id);
+    .eq('id', id) as any;
   
   if (error) {
     toast.error(`Failed to delete student: ${error.message}`);
@@ -97,6 +99,7 @@ export const deleteStudent = async (id: string): Promise<boolean> => {
 };
 
 export const resetAccessToken = async (id: string): Promise<Student | null> => {
+  // Use type casting to work around TypeScript limitations with the Supabase client
   const { data, error } = await supabase
     .from('students')
     .update({ 
@@ -104,8 +107,7 @@ export const resetAccessToken = async (id: string): Promise<Student | null> => {
       is_access_used: false
     })
     .eq('id', id)
-    .select()
-    .single();
+    .select() as any;
   
   if (error) {
     toast.error(`Failed to reset access token: ${error.message}`);
@@ -113,5 +115,5 @@ export const resetAccessToken = async (id: string): Promise<Student | null> => {
     return null;
   }
   
-  return data as Student;
+  return data[0] as Student;
 };

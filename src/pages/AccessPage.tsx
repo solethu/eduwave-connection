@@ -1,186 +1,160 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Mail, LockKeyhole, ArrowRight } from 'lucide-react';
-
-const formSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
-});
+import { Student } from '@/services/studentService';
 
 const AccessPage = () => {
-  const { token } = useParams<{ token: string }>();
+  const { token } = useParams();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
-  const [isValid, setIsValid] = useState(false);
-  const [studentName, setStudentName] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [studentEmail, setStudentEmail] = useState('');
+  const [student, setStudent] = useState<Student | null>(null);
+  const [verifying, setVerifying] = useState(false);
+  const [verificationStep, setVerificationStep] = useState<'check' | 'verify'>('check');
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: '',
-    },
-  });
-
+  // Check if token is valid
   useEffect(() => {
-    const validateToken = async () => {
-      if (!token) {
-        toast.error('Invalid access link');
-        navigate('/');
-        return;
-      }
+    const checkToken = async () => {
+      if (!token) return;
 
       try {
-        // Check if the token exists and is valid
+        setLoading(true);
+        // Use type casting to work around TypeScript limitations with the Supabase client
         const { data, error } = await supabase
           .from('students')
-          .select('name, is_access_used')
+          .select('*')
           .eq('access_token', token)
-          .single();
+          .single() as any;
 
-        if (error || !data) {
-          toast.error('Invalid or expired access link');
-          navigate('/');
+        if (error) {
+          console.error('Error checking token:', error);
+          toast.error('Invalid or expired access token');
+          setTimeout(() => navigate('/login'), 2000);
           return;
         }
 
+        // Check if token is already used
         if (data.is_access_used) {
-          toast.error('This access link has already been used');
-          navigate('/');
+          toast.info('This access link has already been used. Please log in with your credentials.');
+          setTimeout(() => navigate('/login'), 2000);
           return;
         }
 
-        setStudentName(data.name);
-        setIsValid(true);
+        // Set student data and verification step
+        setStudent(data);
+        setVerificationStep('verify');
       } catch (error) {
-        console.error('Error validating token:', error);
-        toast.error('There was an error processing your access link');
-        navigate('/');
+        console.error('Error:', error);
+        toast.error('An error occurred while checking the access token');
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
 
-    validateToken();
+    checkToken();
   }, [token, navigate]);
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  // Handle email verification
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!student) return;
+
     try {
-      // Verify email matches the student's email
-      const { data, error } = await supabase
+      setVerifying(true);
+
+      if (studentEmail.toLowerCase() !== student.email.toLowerCase()) {
+        toast.error('Email does not match our records');
+        setVerifying(false);
+        return;
+      }
+
+      // Mark token as used
+      // Use type casting to work around TypeScript limitations with the Supabase client
+      const { error } = await supabase
         .from('students')
-        .select('id, email')
-        .eq('access_token', token)
-        .single();
+        .update({ is_access_used: true })
+        .eq('id', student.id) as any;
 
-      if (error || !data) {
-        toast.error('Invalid access link');
+      if (error) {
+        console.error('Error marking token as used:', error);
+        toast.error('An error occurred while verifying your access');
+        setVerifying(false);
         return;
       }
 
-      if (data.email.toLowerCase() !== values.email.toLowerCase()) {
-        form.setError('email', { 
-          type: 'manual', 
-          message: 'Email does not match our records' 
-        });
-        return;
-      }
-
-      // Mark access token as used
-      const { error: updateError } = await supabase
-        .from('students')
-        .update({ 
-          is_access_used: true,
-          last_active: new Date().toISOString()
-        })
-        .eq('id', data.id);
-
-      if (updateError) {
-        toast.error('Error processing your access');
-        console.error('Error updating student:', updateError);
-        return;
-      }
-
-      // Store student in localStorage for future access
-      localStorage.setItem('user', JSON.stringify({
-        name: studentName,
-        email: values.email,
+      // Set user data in localStorage
+      const userData = {
+        id: student.id,
+        name: student.name,
+        email: student.email,
         role: 'student'
-      }));
+      };
 
-      toast.success('Access granted successfully');
-      navigate('/dashboard');
+      localStorage.setItem('user', JSON.stringify(userData));
+      toast.success('Access verified successfully');
+      
+      // Redirect to dashboard
+      setTimeout(() => navigate('/dashboard'), 1000);
     } catch (error) {
-      console.error('Error processing access:', error);
-      toast.error('Error processing your access request');
+      console.error('Error:', error);
+      toast.error('An error occurred during verification');
+      setVerifying(false);
     }
   };
 
-  if (isLoading) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin h-8 w-8 border-4 border-brand border-t-transparent rounded-full" />
       </div>
     );
   }
 
-  if (!isValid) {
-    return null; // Navigate away happens in useEffect
-  }
-
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50 px-4">
-      <Card className="w-full max-w-md">
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <Card className="w-full max-w-md mx-4">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Welcome, {studentName}</CardTitle>
-          <CardDescription>
-            Enter your email to access your learning materials
+          <CardTitle className="text-2xl font-bold text-center">Access Portal</CardTitle>
+          <CardDescription className="text-center">
+            {verificationStep === 'check' ? 'Checking your access token...' : 'Verify your identity to continue'}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-                        <Input
-                          placeholder="your.email@example.com"
-                          type="email"
-                          className="pl-10"
-                          {...field}
-                        />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" className="w-full">
-                Access Materials <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
+          {verificationStep === 'verify' && student && (
+            <form onSubmit={handleVerify} className="space-y-4">
+              <div className="space-y-2">
+                <p className="text-center text-sm">
+                  Welcome <span className="font-semibold">{student.name}</span>!
+                </p>
+                <p className="text-center text-sm text-gray-500">
+                  Please enter your email address to verify your identity.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Input
+                  type="email"
+                  placeholder="Your email address"
+                  value={studentEmail}
+                  onChange={(e) => setStudentEmail(e.target.value)}
+                  required
+                  className="w-full"
+                />
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={verifying || !studentEmail}
+                >
+                  {verifying ? 'Verifying...' : 'Verify & Access'}
+                </Button>
+              </div>
             </form>
-          </Form>
+          )}
         </CardContent>
-        <CardFooter className="flex flex-col items-center justify-center border-t pt-5">
-          <div className="flex items-center text-sm text-gray-500">
-            <LockKeyhole className="mr-2 h-4 w-4" />
-            <span>Your access is secure and protected</span>
-          </div>
-        </CardFooter>
       </Card>
     </div>
   );
