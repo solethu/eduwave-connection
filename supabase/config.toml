@@ -1,1 +1,13 @@
+
 project_id = "ztlothznntjfvrmncyam"
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+
+[db]
+port = 54322
+
+[functions]
+[functions.send-access-email]
+verify_jwt = true

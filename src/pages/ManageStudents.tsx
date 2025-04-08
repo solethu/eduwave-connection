@@ -30,23 +30,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { PlusCircle, Pencil, Trash2, Search, UserPlus } from 'lucide-react';
+import { PlusCircle, Pencil, Trash2, Search, UserPlus, Mail, Copy } from 'lucide-react';
 import Header from '@/components/Header';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-
-// Mock student data
-const initialStudents = [
-  { id: '1', name: 'Emma Wilson', email: 'emma@example.com', progress: 78, lastActive: '2023-09-04T15:30:00' },
-  { id: '2', name: 'John Smith', email: 'john@example.com', progress: 45, lastActive: '2023-09-04T14:15:00' },
-  { id: '3', name: 'Sarah Johnson', email: 'sarah@example.com', progress: 62, lastActive: '2023-09-04T09:20:00' },
-  { id: '4', name: 'Michael Brown', email: 'michael@example.com', progress: 91, lastActive: '2023-09-03T16:45:00' },
-  { id: '5', name: 'James Wilson', email: 'james@example.com', progress: 55, lastActive: '2023-09-02T11:30:00' },
-  { id: '6', name: 'Lisa Taylor', email: 'lisa@example.com', progress: 82, lastActive: '2023-09-01T10:15:00' },
-  { id: '7', name: 'Robert Garcia', email: 'robert@example.com', progress: 38, lastActive: '2023-08-31T14:20:00' },
-  { id: '8', name: 'Jennifer Lee', email: 'jennifer@example.com', progress: 67, lastActive: '2023-08-30T09:45:00' },
-];
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { 
+  Student, 
+  fetchStudents, 
+  addStudent, 
+  updateStudent, 
+  deleteStudent, 
+  resetAccessToken,
+  sendAccessEmail 
+} from '@/services/studentService';
 
 // Form schema for student
 const studentFormSchema = z.object({
@@ -61,19 +59,11 @@ interface User {
   avatar?: string;
 }
 
-interface Student {
-  id: string;
-  name: string;
-  email: string;
-  progress: number;
-  lastActive: string;
-}
-
 const ManageStudents = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [students, setStudents] = useState<Student[]>(initialStudents);
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -107,8 +97,86 @@ const ManageStudents = () => {
     setLoading(false);
   }, [navigate]);
 
+  // Fetch students
+  const { data: students = [], isLoading: isLoadingStudents } = useQuery({
+    queryKey: ['students'],
+    queryFn: fetchStudents,
+  });
+
+  // Add student mutation
+  const addStudentMutation = useMutation({
+    mutationFn: (data: z.infer<typeof studentFormSchema>) => 
+      addStudent(data.name, data.email),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+      toast.success('Student added successfully');
+      setIsAddModalOpen(false);
+      form.reset();
+    },
+    onError: (error) => {
+      toast.error(`Failed to add student: ${error.message}`);
+    },
+  });
+
+  // Update student mutation
+  const updateStudentMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string, data: z.infer<typeof studentFormSchema> }) => 
+      updateStudent(id, data.name, data.email),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+      toast.success('Student updated successfully');
+      setIsEditModalOpen(false);
+      setSelectedStudent(null);
+      form.reset();
+    },
+    onError: (error) => {
+      toast.error(`Failed to update student: ${error.message}`);
+    },
+  });
+
+  // Delete student mutation
+  const deleteStudentMutation = useMutation({
+    mutationFn: (id: string) => deleteStudent(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+      toast.success('Student deleted successfully');
+      setIsDeleteModalOpen(false);
+      setSelectedStudent(null);
+    },
+    onError: (error) => {
+      toast.error(`Failed to delete student: ${error.message}`);
+    },
+  });
+
+  // Reset access token mutation
+  const resetAccessTokenMutation = useMutation({
+    mutationFn: (id: string) => resetAccessToken(id),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+      toast.success('Access link reset successfully');
+      if (data) {
+        setSelectedStudent(data);
+      }
+    },
+    onError: (error) => {
+      toast.error(`Failed to reset access link: ${error.message}`);
+    },
+  });
+
+  // Send access email mutation
+  const sendAccessEmailMutation = useMutation({
+    mutationFn: (id: string) => sendAccessEmail(id),
+    onSuccess: (success) => {
+      if (success) {
+        toast.success('Access link email sent successfully');
+      }
+    }
+  });
+
   // Format date to relative time
-  const getRelativeTime = (dateString: string) => {
+  const getRelativeTime = (dateString: string | null) => {
+    if (!dateString) return 'Never';
+    
     const date = new Date(dateString);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
@@ -131,6 +199,24 @@ const ManageStudents = () => {
     return date.toLocaleDateString();
   };
 
+  // Generate access link
+  const getAccessLink = (student: Student) => {
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/access/${student.access_token}`;
+  };
+
+  // Copy access link to clipboard
+  const copyAccessLink = (student: Student) => {
+    const link = getAccessLink(student);
+    navigator.clipboard.writeText(link);
+    toast.success('Access link copied to clipboard');
+  };
+
+  // Send access link via email
+  const handleSendAccessLink = (student: Student) => {
+    sendAccessEmailMutation.mutate(student.id);
+  };
+
   // Filter students based on search query
   const filteredStudents = students.filter(student => 
     student.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -139,44 +225,24 @@ const ManageStudents = () => {
 
   // Handle add student form submission
   const handleAddStudent = (data: z.infer<typeof studentFormSchema>) => {
-    const newStudent: Student = {
-      id: `${students.length + 1}`,
-      name: data.name,
-      email: data.email,
-      progress: 0,
-      lastActive: new Date().toISOString(),
-    };
-    
-    setStudents([...students, newStudent]);
-    toast.success(`Student ${data.name} added successfully`);
-    setIsAddModalOpen(false);
-    form.reset();
+    addStudentMutation.mutate(data);
   };
 
   // Handle edit student form submission
   const handleEditStudent = (data: z.infer<typeof studentFormSchema>) => {
     if (!selectedStudent) return;
     
-    const updatedStudents = students.map(student => 
-      student.id === selectedStudent.id ? { ...student, name: data.name, email: data.email } : student
-    );
-    
-    setStudents(updatedStudents);
-    toast.success(`Student ${data.name} updated successfully`);
-    setIsEditModalOpen(false);
-    setSelectedStudent(null);
-    form.reset();
+    updateStudentMutation.mutate({
+      id: selectedStudent.id,
+      data
+    });
   };
 
   // Handle delete student
   const handleDeleteStudent = () => {
     if (!selectedStudent) return;
     
-    const updatedStudents = students.filter(student => student.id !== selectedStudent.id);
-    setStudents(updatedStudents);
-    toast.success(`Student ${selectedStudent.name} deleted successfully`);
-    setIsDeleteModalOpen(false);
-    setSelectedStudent(null);
+    deleteStudentMutation.mutate(selectedStudent.id);
   };
 
   // Open edit modal and prepopulate form
@@ -193,7 +259,12 @@ const ManageStudents = () => {
     setIsDeleteModalOpen(true);
   };
 
-  if (loading) {
+  // Reset student access token
+  const handleResetAccessToken = (student: Student) => {
+    resetAccessTokenMutation.mutate(student.id);
+  };
+
+  if (loading || isLoadingStudents) {
     return <div className="flex items-center justify-center min-h-screen">
       <div className="animate-spin h-8 w-8 border-4 border-brand border-t-transparent rounded-full" />
     </div>;
@@ -207,9 +278,12 @@ const ManageStudents = () => {
         <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold animate-fade-in">Manage Students</h1>
-            <p className="text-gray-500 mt-1 animate-fade-in">Add, edit, or remove students</p>
+            <p className="text-gray-500 mt-1 animate-fade-in">Add, edit, or remove students and manage their access</p>
           </div>
-          <Button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2">
+          <Button onClick={() => {
+            form.reset();
+            setIsAddModalOpen(true);
+          }} className="flex items-center gap-2">
             <UserPlus size={16} />
             Add New Student
           </Button>
@@ -239,6 +313,7 @@ const ManageStudents = () => {
                     <TableHead>Email</TableHead>
                     <TableHead>Progress</TableHead>
                     <TableHead>Last Active</TableHead>
+                    <TableHead>Access Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -253,35 +328,65 @@ const ManageStudents = () => {
                             <div className="w-full max-w-24 h-2 bg-gray-100 rounded-full">
                               <div 
                                 className="h-full bg-brand rounded-full" 
-                                style={{ width: `${student.progress}%` }}
+                                style={{ width: `${student.progress || 0}%` }}
                               />
                             </div>
-                            <span className="text-sm">{student.progress}%</span>
+                            <span className="text-sm">{student.progress || 0}%</span>
                           </div>
                         </TableCell>
-                        <TableCell>{getRelativeTime(student.lastActive)}</TableCell>
-                        <TableCell className="text-right space-x-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => openEditModal(student)}
-                          >
-                            <Pencil size={16} />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => openDeleteModal(student)}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 size={16} />
-                          </Button>
+                        <TableCell>{getRelativeTime(student.last_active)}</TableCell>
+                        <TableCell>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            student.is_access_used 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {student.is_access_used ? 'Used' : 'Not Used'}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => handleSendAccessLink(student)}
+                              title="Send Access Link"
+                              disabled={sendAccessEmailMutation.isPending}
+                            >
+                              <Mail size={16} />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => copyAccessLink(student)}
+                              title="Copy Access Link"
+                            >
+                              <Copy size={16} />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => openEditModal(student)}
+                              title="Edit Student"
+                            >
+                              <Pencil size={16} />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => openDeleteModal(student)}
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                              title="Delete Student"
+                            >
+                              <Trash2 size={16} />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                         No students found matching your search
                       </TableCell>
                     </TableRow>
@@ -299,7 +404,7 @@ const ManageStudents = () => {
           <DialogHeader>
             <DialogTitle>Add New Student</DialogTitle>
             <DialogDescription>
-              Enter the student details below to create a new account.
+              Enter the student details below to create a new account and send an access link.
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
@@ -341,7 +446,12 @@ const ManageStudents = () => {
                 >
                   Cancel
                 </Button>
-                <Button type="submit">Add Student</Button>
+                <Button 
+                  type="submit" 
+                  disabled={addStudentMutation.isPending}
+                >
+                  {addStudentMutation.isPending ? 'Adding...' : 'Add Student'}
+                </Button>
               </DialogFooter>
             </form>
           </Form>
@@ -385,6 +495,29 @@ const ManageStudents = () => {
                   </FormItem>
                 )}
               />
+              {selectedStudent && (
+                <div className="pt-2">
+                  <p className="text-sm font-medium mb-2">Access Link Status</p>
+                  <div className="flex items-center justify-between bg-gray-50 p-2 rounded-md">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      selectedStudent.is_access_used 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {selectedStudent.is_access_used ? 'Used' : 'Not Used'}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleResetAccessToken(selectedStudent)}
+                      disabled={resetAccessTokenMutation.isPending}
+                    >
+                      Reset Link
+                    </Button>
+                  </div>
+                </div>
+              )}
               <DialogFooter>
                 <Button 
                   type="button" 
@@ -397,7 +530,12 @@ const ManageStudents = () => {
                 >
                   Cancel
                 </Button>
-                <Button type="submit">Save Changes</Button>
+                <Button 
+                  type="submit"
+                  disabled={updateStudentMutation.isPending}
+                >
+                  {updateStudentMutation.isPending ? 'Saving...' : 'Save Changes'}
+                </Button>
               </DialogFooter>
             </form>
           </Form>
@@ -428,8 +566,9 @@ const ManageStudents = () => {
               type="button" 
               variant="destructive" 
               onClick={handleDeleteStudent}
+              disabled={deleteStudentMutation.isPending}
             >
-              Delete
+              {deleteStudentMutation.isPending ? 'Deleting...' : 'Delete'}
             </Button>
           </DialogFooter>
         </DialogContent>

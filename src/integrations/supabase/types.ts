@@ -116,6 +116,39 @@ export type Database = {
         }
         Relationships: []
       }
+      students: {
+        Row: {
+          access_token: string | null
+          created_at: string | null
+          email: string
+          id: string
+          is_access_used: boolean | null
+          last_active: string | null
+          name: string
+          progress: number | null
+        }
+        Insert: {
+          access_token?: string | null
+          created_at?: string | null
+          email: string
+          id?: string
+          is_access_used?: boolean | null
+          last_active?: string | null
+          name: string
+          progress?: number | null
+        }
+        Update: {
+          access_token?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          is_access_used?: boolean | null
+          last_active?: string | null
+          name?: string
+          progress?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
